@@ -44,13 +44,11 @@ void moveGhost(void);
 
 //-----------------------------------
 
-int khawa[40][40], score = 0;
+int score[2];
+int khawa[40][40][2];
 int ghost_x[4], ghost_y[4];
-int dist[40][40];
+int dist[40][40][2];
 int last[4] = {-1, -1, -1, -1};
-
-int khawa2[40][40], score2 = 0;
-int dist2[40][40];
 
 int giveUp;
 
@@ -63,8 +61,8 @@ int WIN = 0, LOSE = 0;
 
 int pacman_dir = 0; // 0 = left, 1 = up, 2 = right, 3 = down;
 
-char grid[40][40],	grid2[40][40];
-int okay[40][40],	okay2[40][40];
+char grid[40][40][2];
+int okay[40][40][2];
 
 // timers
 int pacman_mouth_t, pacman_motion_t;
@@ -74,6 +72,7 @@ int ghost_motion_t[4];
 
 //motion
 int forward_right = 0, forward_up = 0;
+int pacman_last_x, pacman_last_y;
 // -------------------------------
 
 // MENU
@@ -141,10 +140,8 @@ void drawMenu() {
     }
 }
 
-
-
 #define MAX_NAME_LENGTH 50
-#define MAX_ENTRIES 100
+#define MAX_ENTRIES 12
 
 typedef struct {
     char name[MAX_NAME_LENGTH];
@@ -181,7 +178,6 @@ void showLeaderBoard() {
         return;
     }
 
-    // Read entries from the file
     while (fscanf(file, "%s %d", entries[numEntries].name, &entries[numEntries].score) == 2) {
         numEntries++;
         if (numEntries >= MAX_ENTRIES) {
@@ -190,7 +186,6 @@ void showLeaderBoard() {
         }
     }
 
-    // Close the file
     fclose(file);
 
     // Print the entries
@@ -224,19 +219,17 @@ void level() {
 
 	iShowBMP(17, 17, "assets/level_bg_2.bmp");
 
-	if(score == 302) {
+	if(score[0] == 30) {
 		iClear();
-		// iShowBMP(0, 0, "win.bmp");
 
 		GAMESTATE = TRANSITION;
-
 		return;
 	}
 
 	if(LOSE) {
 		iClear();
 
-		score2 = 0;
+		score[1] = 0;
 		timeShuru2 = 0;
 		GAMESTATE = NAME_INPUT;
 
@@ -252,13 +245,13 @@ void level() {
 	}
 
 	iShowBMP(150, 600, "assets/title.bmp");
-	iText(500, 600, toString(score), GLUT_BITMAP_TIMES_ROMAN_24);
+	iText(500, 600, toString(score[0]), GLUT_BITMAP_TIMES_ROMAN_24);
 	iText(100, 600, toString(timeNow), GLUT_BITMAP_TIMES_ROMAN_24);
 
 	iSetColor(255, 255, 255);
 	for(int i = 0; i < 32; i++) {
 		for(int j = 0; j < 32; j++) {
-			if(!khawa[i][j])
+			if(!khawa[i][j][0])
 				iPoint(toAxis_x(i, j) + 16, toAxis_y(i, j) + 16, 2);
 		}
 	}
@@ -288,7 +281,7 @@ void level2() {
 
 	iSetColor(20, 210, 60);
 
-	if(score2 == 292) {
+	if(score[1] == 29) {
 		iClear();
 		// iShowBMP(0, 0, "win.bmp");
 
@@ -316,19 +309,19 @@ void level2() {
 
 	for(int i = d; i < 512 + d; i++) {
 		for(int j = d; j < 512 + d; j++) {
-			if(grid2[toArray_x(i, j)][toArray_y(i, j)] == '#')
+			if(grid[toArray_x(i, j)][toArray_y(i, j)][1] == '#')
 				iPoint(i, j+15, 1);
 		}
 	}
 
 	iShowBMP(150, 600, "assets/title.bmp");
-	iText(500, 600, toString(score2), GLUT_BITMAP_TIMES_ROMAN_24);
+	iText(500, 600, toString(score[1]), GLUT_BITMAP_TIMES_ROMAN_24);
 	iText(100, 600, toString(timeNow2), GLUT_BITMAP_TIMES_ROMAN_24);
 
 	iSetColor(255, 255, 255);
 	for(int i = 0; i < 32; i++) {
 		for(int j = 0; j < 32; j++) {
-			if(!khawa2[i][j])
+			if(!khawa[i][j][1])
 				iPoint(toAxis_x(i, j) + 16, toAxis_y(i, j) + 16, 2);
 		}
 	}
@@ -352,6 +345,20 @@ void level2() {
 	if(numGhost > 3) iShowBMP(ghost_x[3], ghost_y[3], "assets/bhoot_3.bmp");
 }
 
+
+void resetGhost() {
+	ghost_x[0] = toAxis_x(18, 13);
+	ghost_y[0] = toAxis_y(18, 13);
+
+	ghost_x[1] = toAxis_x(18, 16);
+	ghost_y[1] = toAxis_y(18, 16);
+
+	ghost_x[2] = toAxis_x(15, 16);
+	ghost_y[2] = toAxis_y(15, 16);
+
+	ghost_x[3] = toAxis_x(15, 13);
+	ghost_y[3] = toAxis_y(15, 13);
+}
 
 char str[100], str2[100];
 int len;
@@ -391,7 +398,7 @@ void iDraw() {
 	}
 
 	if(GAMESTATE == INGAME_LVL_2) {
-		numGhost = max(1, submenuSelectedOption - 3);
+		numGhost = max(2, submenuSelectedOption - 2);
 		if(!timeShuru2) {
 			timeShuru2 = 1;
 			timeNow2 = 0;
@@ -524,11 +531,11 @@ void iKeyboard(unsigned char key) {
 
 				int totalScore = 0;
 				if(WIN) totalScore = 20000 - timeNow - timeNow2;
-				else totalScore = 500 + 10 * timeNow + 20 * score + timeNow2 * 10 + score2 * 20;
+				else totalScore = 500 + 10 * timeNow + 20 * score[0] + timeNow2 * 10 + score[1] * 20;
 
 				totalScore += giveUp * 500;
 
-				printf("%d %d %d %d\n", score, timeNow, score2, timeNow2);
+				printf("%d %d %d %d\n", score[0], timeNow, score[1], timeNow2);
 
 				FILE* file = fopen("data.txt", "a");
 				fprintf(file, "%s %d\n", str2, totalScore);
@@ -569,21 +576,20 @@ void iSpecialKeyboard(unsigned char key) {
     case MENU:
         switch (key) {
         case GLUT_KEY_UP:
-            if (insideSubmenu) {
-                // Navigate submenu options
+            if (insideSubmenu)
                 submenuSelectedOption = (submenuSelectedOption == SUBMENU_EASY) ? SUBMENU_HARD : submenuSelectedOption - 1;
-            } else {
+            else
                 selectedOption = (selectedOption == MENU_START) ? MENU_EXIT : selectedOption - 1;
-            }
+
             break;
-        case GLUT_KEY_DOWN:
-            if (insideSubmenu) {
-                // Navigate submenu options
+       
+	    case GLUT_KEY_DOWN:
+            if (insideSubmenu)
                 submenuSelectedOption = (submenuSelectedOption == SUBMENU_HARD) ? SUBMENU_EASY : submenuSelectedOption + 1;
-            } else {
+			else 
                 selectedOption = (selectedOption == MENU_EXIT) ? MENU_START : selectedOption + 1;
-            }
-            break;
+            
+			break;
     }
 
     case (INGAME_LVL_1):
@@ -618,99 +624,38 @@ void showPacman(void) {
 }
 
 void movePacman(void) {
-	if(GAMESTATE == INGAME_LVL_1) {
-		int here_x = toArray_x(pacman_x, pacman_y);
-		int here_y = toArray_y(pacman_x, pacman_y);
 
-		if(forward_right > 0) {
-			pacman_dir = 0;
-			pacman_x += 16;
+	int lvl = 0;
+	if(GAMESTATE == INGAME_LVL_1) lvl = 0;
+	if(GAMESTATE == INGAME_LVL_2) lvl = 1;
 
-			if(!okay[here_x][here_y + 1])
-				pacman_x -= 16;
-		}
-		
-		if(forward_right < 0) {
-			pacman_dir = 2;
-			pacman_x -= 16;
+	pacman_last_x = pacman_x;
+	pacman_last_y = pacman_y;
 
-			if(!okay[here_x][here_y - 1])
-				pacman_x += 16;
-		}
+	pacman_x += 16 * forward_right;
+	pacman_y += 16 * forward_up;
 
-		if(forward_up > 0) {
-			pacman_dir = 1;
-			pacman_y += 16;
+	int here_x = toArray_x(pacman_x, pacman_y);
+	int here_y = toArray_y(pacman_x, pacman_y);
 
-			if(!okay[here_x - 1][here_y])
-				pacman_y -= 16;
-		}
-
-		if(forward_up < 0) {
-			pacman_dir = 3;
-			pacman_y -= 16;
-
-			if(!okay[here_x + 1][here_y])
-				pacman_y += 16;
-		}
-
-		if(pacman_x < d + 1) pacman_x = 512 + d - 32;
-		if(pacman_x > 512 + d - 32) pacman_x = d;
-
-		here_x = toArray_x(pacman_x, pacman_y);
-		here_y = toArray_y(pacman_x, pacman_y);
-
-		score += !khawa[here_x][here_y];
-		khawa[here_x][here_y] = 1;
+	if(!okay[here_x][here_y][lvl]) {
+		pacman_x -= 16 * forward_right;
+		pacman_y -= 16 * forward_up;
 	}
-	
-	
-	
-	if(GAMESTATE == INGAME_LVL_2) {
-		int here_x = toArray_x(pacman_x, pacman_y);
-		int here_y = toArray_y(pacman_x, pacman_y);
 
-		if(forward_right > 0) {
-			pacman_dir = 0;
-			pacman_x += 16;
+	if(forward_right > 0) pacman_dir = 0;
+	if(forward_right < 0) pacman_dir = 2;
+	if(forward_up > 0) pacman_dir = 1;
+	if(forward_up < 0) pacman_dir = 3;
 
-			if(!okay2[here_x][here_y + 1])
-				pacman_x -= 16;
-		}
-		
-		if(forward_right < 0) {
-			pacman_dir = 2;
-			pacman_x -= 16;
+	if(pacman_x < d + 1) pacman_x = 512 + d - 32;
+	if(pacman_x > 512 + d - 32) pacman_x = d;
 
-			if(!okay2[here_x][here_y - 1])
-				pacman_x += 16;
-		}
+	here_x = toArray_x(pacman_x, pacman_y);
+	here_y = toArray_y(pacman_x, pacman_y);
 
-		if(forward_up > 0) {
-			pacman_dir = 1;
-			pacman_y += 16;
-
-			if(!okay2[here_x - 1][here_y])
-				pacman_y -= 16;
-		}
-
-		if(forward_up < 0) {
-			pacman_dir = 3;
-			pacman_y -= 16;
-
-			if(!okay2[here_x + 1][here_y])
-				pacman_y += 16;
-		}
-
-		if(pacman_x < d + 1) pacman_x = 512 + d - 32;
-		if(pacman_x > 512 + d - 32) pacman_x = d;
-
-		here_x = toArray_x(pacman_x, pacman_y);
-		here_y = toArray_y(pacman_x, pacman_y);
-
-		score2 += !khawa2[here_x][here_y];
-		khawa2[here_x][here_y] = 1;
-	}
+	score[lvl] += !khawa[here_x][here_y][lvl];
+	khawa[here_x][here_y][lvl] = 1;
 }
 
 bool hit(int i, int j, int player) {
@@ -741,150 +686,81 @@ bool hit(int i, int j, int player) {
 }
 
 void moveGhost(void) {
-	if(GAMESTATE == INGAME_LVL_1) {
-		for(int j = 0; j < 4; j++) {
-			int dx[4] = {0, 1, 0, -1};
-			int dy[4] = {1, 0, -1, 0};
+	int lvl;
+	if(GAMESTATE == INGAME_LVL_1) lvl = 0;
+	if(GAMESTATE == INGAME_LVL_2) lvl = 1;
 
-			int now_x = toArray_x(ghost_x[j], ghost_y[j]);
-			int now_y = toArray_y(ghost_x[j], ghost_y[j]);
+	for(int j = 0; j < 4; j++) {
+		int dx[4] = {0, 1, 0, -1};
+		int dy[4] = {1, 0, -1, 0};
 
-			for(int iter = 0; iter < 20; iter++) {
-				int p = rand() % 4;
+		int now_x = toArray_x(ghost_x[j], ghost_y[j]);
+		int now_y = toArray_y(ghost_x[j], ghost_y[j]);
 
-				if(rand() % 3 == 0) {
-					int mn = 500;
-					for(int i = 0; i < 4; i++) {
-						if(dist[now_x + dx[i]][now_y + dy[i]] <= mn) {
-							mn = dist[now_x + dx[i]][now_y + dy[i]];
-							p = i;
-						}
-					}
-				}
+		for(int iter = 0; iter < 20; iter++) {
+			int p = rand() % 4;
 
-				if(now_x + dx[p] < 0 || now_x + dx[p] > 30) continue;
-				if(now_y + dy[p] < 0 || now_y + dy[p] > 30) continue;
-				
-				ghost_x[j] = toAxis_x(now_x + dx[p], now_y + dy[p]);
-				ghost_y[j] = toAxis_y(now_x + dx[p], now_y + dy[p]);
-
-				int flag = 0;
+			if(rand() % 3 == 0) {
+				int mn = 500;
 				for(int i = 0; i < 4; i++) {
-					if(i == j) continue;
-					if(hit(i, j, 0)) flag = 1;
-				}
-				
-				if(flag) {
-					ghost_x[j] = toAxis_x(now_x, now_y);
-					ghost_y[j] = toAxis_y(now_x, now_y);
-					last[j] = (last[j] + 2) % 4;
-					break;
-				}
-
-
-				if(okay[now_x + dx[p]][now_y + dy[p]] && last[j] != (p+2) % 4) {
-
-					ghost_x[j] = toAxis_x(now_x + dx[p], now_y + dy[p]);
-					ghost_y[j] = toAxis_y(now_x + dx[p], now_y + dy[p]);
-
-					last[j] = p;
-					break;
+					if(dist[now_x + dx[i]][now_y + dy[i]][lvl] <= mn) {
+						mn = dist[now_x + dx[i]][now_y + dy[i]][lvl];
+						p = i;
+					}
 				}
 			}
-		}
-	}
-	
-	if(GAMESTATE == INGAME_LVL_2) {
-		for(int j = 0; j < 4; j++) {
-			int dx[4] = {0, 1, 0, -1};
-			int dy[4] = {1, 0, -1, 0};
 
-			int now_x = toArray_x(ghost_x[j], ghost_y[j]);
-			int now_y = toArray_y(ghost_x[j], ghost_y[j]);
+			if(now_x + dx[p] < 0 || now_x + dx[p] > 30) continue;
+			if(now_y + dy[p] < 0 || now_y + dy[p] > 30) continue;
+			
+			ghost_x[j] = toAxis_x(now_x + dx[p], now_y + dy[p]);
+			ghost_y[j] = toAxis_y(now_x + dx[p], now_y + dy[p]);
 
-			for(int iter = 0; iter < 20; iter++) {
-				int p = rand() % 4;
+			int flag = 0;
+			for(int i = 0; i < 4; i++) {
+				if(i == j) continue;
+				if(hit(i, j, 0)) flag = 1;
+			}
+			
+			if(flag) {
+				ghost_x[j] = toAxis_x(now_x, now_y);
+				ghost_y[j] = toAxis_y(now_x, now_y);
+				last[j] = (last[j] + 2) % 4;
+				break;
+			}
 
-				if(rand() % 3 == 0) {
-					int mn = 500;
-					for(int i = 0; i < 4; i++) {
-						if(dist2[now_x + dx[i]][now_y + dy[i]] <= mn) {
-							mn = dist2[now_x + dx[i]][now_y + dy[i]];
-							p = i;
-						}
-					}
-				}
+			if(okay[now_x + dx[p]][now_y + dy[p]][lvl] && last[j] != (p+2) % 4) {
 
-				if(now_x + dx[p] < 0 || now_x + dx[p] > 30) continue;
-				if(now_y + dy[p] < 0 || now_y + dy[p] > 30) continue;
-				
 				ghost_x[j] = toAxis_x(now_x + dx[p], now_y + dy[p]);
 				ghost_y[j] = toAxis_y(now_x + dx[p], now_y + dy[p]);
 
-				int flag = 0;
-				for(int i = 0; i < 4; i++) {
-					if(i == j) continue;
-					if(hit(i, j, 0)) flag = 1;
-				}
-				
-				if(flag) {
-					ghost_x[j] = toAxis_x(now_x, now_y);
-					ghost_y[j] = toAxis_y(now_x, now_y);
-					last[j] = (last[j] + 2) % 4;
-					break;
-				}
-
-
-				if(okay2[now_x + dx[p]][now_y + dy[p]] && last[j] != (p+2) % 4) {
-
-					ghost_x[j] = toAxis_x(now_x + dx[p], now_y + dy[p]);
-					ghost_y[j] = toAxis_y(now_x + dx[p], now_y + dy[p]);
-
-					last[j] = p;
-					break;
-				}
+				last[j] = p;
+				break;
 			}
 		}
 	}
 }
 
 void shortestPath(void) {
+	int lvl;
+	if(GAMESTATE == INGAME_LVL_1) lvl = 0;
+	if(GAMESTATE == INGAME_LVL_2) lvl = 1;
 
-	if(GAMESTATE == INGAME_LVL_1) {
+	for(int i = 0; i < 32; i++)
+		for(int j = 0; j < 32; j++)
+			dist[i][j][lvl] =  5000;
 
-		memset(dist, 0x3f, sizeof dist);
+	dist[toArray_x(pacman_x, pacman_y)][toArray_y(pacman_x, pacman_y)][0] = 0;
 
-		dist[toArray_x(pacman_x, pacman_y)][toArray_y(pacman_x, pacman_y)] = 0;
+	for(int k = 0; k < 512; k++) {
+		for(int i = 0; i < 32; i++) {
+			for(int j = 0; j < 32; j++) {
+				if(!okay[i][j][lvl]) continue;
 
-		for(int k = 0; k < 512; k++) {
-			for(int i = 0; i < 32; i++) {
-				for(int j = 0; j < 32; j++) {
-					if(!okay[i][j]) continue;
-
-					if(i) dist[i][j] = min(dist[i][j], dist[i-1][j] + 1);
-					if(j) dist[i][j] = min(dist[i][j], dist[i][j-1] + 1);
-					dist[i][j] = min(dist[i][j], dist[i+1][j] + 1);
-					dist[i][j] = min(dist[i][j], dist[i][j+1] + 1);
-				}
-			}
-		}
-	}
-
-	if(GAMESTATE == INGAME_LVL_2) {
-		memset(dist2, 0x3f, sizeof dist2);
-
-		dist2[toArray_x(pacman_x, pacman_y)][toArray_y(pacman_x, pacman_y)] = 0;
-
-		for(int k = 0; k < 512; k++) {
-			for(int i = 0; i < 32; i++) {
-				for(int j = 0; j < 32; j++) {
-					if(!okay2[i][j]) continue;
-
-					if(i) dist2[i][j] = min(dist2[i][j], dist2[i-1][j] + 1);
-					if(j) dist2[i][j] = min(dist2[i][j], dist2[i][j-1] + 1);
-					dist2[i][j] = min(dist2[i][j], dist2[i+1][j] + 1);
-					dist2[i][j] = min(dist2[i][j], dist2[i][j+1] + 1);
-				}
+				if(i) dist[i][j][lvl] = min(dist[i][j][lvl], dist[i-1][j][lvl] + 1);
+				if(j) dist[i][j][lvl] = min(dist[i][j][lvl], dist[i][j-1][lvl] + 1);
+				dist[i][j][lvl] = min(dist[i][j][lvl], dist[i+1][j][lvl] + 1);
+				dist[i][j][lvl] = min(dist[i][j][lvl], dist[i][j+1][lvl] + 1);
 			}
 		}
 	}
@@ -892,17 +768,7 @@ void shortestPath(void) {
 
 void update() {
 	if(GAMESTATE == MENU) {
-		ghost_x[0] = toAxis_x(18, 13);
-		ghost_y[0] = toAxis_y(18, 13);
-
-		ghost_x[1] = toAxis_x(18, 16);
-		ghost_y[1] = toAxis_y(18, 16);
-
-		ghost_x[2] = toAxis_x(15, 16);
-		ghost_y[2] = toAxis_y(15, 16);
-
-		ghost_x[3] = toAxis_x(15, 13);
-		ghost_y[3] = toAxis_y(15, 13);
+		resetGhost();
 
 		pacman_x = 16 + d, pacman_y = 512 - 30 * 16 + d;
 		pacman_mouth_toggle = 0;
@@ -911,30 +777,23 @@ void update() {
 
 		pacman_dir = 0; 
 
-		score = 0;
-		for(int i = 0; i < 32; i++) {
-			for(int j = 0; j < 32; j++) {
-				if(okay[i][j] && grid[i][j] == '.') khawa[i][j] = 0;
-				else khawa[i][j] = 1;
+		score[0] = score[1] = 0;
+
+		for(int lvl = 0; lvl < 2; lvl++) {
+			for(int i = 0; i < 32; i++) {
+				for(int j = 0; j < 32; j++) {
+					if(okay[i][j][lvl] && grid[i][j][lvl] == '.') khawa[i][j][lvl] = 0;
+					else khawa[i][j][lvl] = 1;
+				}
 			}
 		}
 
 		timeShuru = timeShuru2 = 0;
 		timeNow = timeNow2 = 0;
-		score = score2 = 0;
+		score[0] = score[1] = 0;
 	}
 	if(GAMESTATE == TRANSITION) {
-		ghost_x[0] = toAxis_x(18, 13);
-		ghost_y[0] = toAxis_y(18, 13);
-
-		ghost_x[1] = toAxis_x(18, 16);
-		ghost_y[1] = toAxis_y(18, 16);
-
-		ghost_x[2] = toAxis_x(15, 16);
-		ghost_y[2] = toAxis_y(15, 16);
-
-		ghost_x[3] = toAxis_x(15, 13);
-		ghost_y[3] = toAxis_y(15, 13);
+		resetGhost();
 
 		pacman_x = 16 + d, pacman_y = 512 - 30 * 16 + d;
 		pacman_mouth_toggle = 0;
@@ -950,7 +809,6 @@ void timeInc() {
 	if(GAMESTATE == INGAME_LVL_2) timeNow2++;
 }
 
-
 int main() {
 	//place your own initialization codes here.
 
@@ -960,98 +818,49 @@ int main() {
 
 	srand(time(NULL));
 
-	ghost_x[0] = toAxis_x(18, 13);
-	ghost_y[0] = toAxis_y(18, 13);
+	resetGhost();
 
-	ghost_x[1] = toAxis_x(18, 16);
-	ghost_y[1] = toAxis_y(18, 16);
+	for(int lvl = 0; lvl < 2; lvl++) {
+		FILE *file; 
 
-	ghost_x[2] = toAxis_x(15, 16);
-	ghost_y[2] = toAxis_y(15, 16);
+		if(lvl == 0) file = fopen("level_grid.txt", "r");
+		if(lvl == 1) file = fopen("level_grid_2.txt", "r");
 
-	ghost_x[3] = toAxis_x(15, 13);
-	ghost_y[3] = toAxis_y(15, 13);
+		char line[50];
+		int row = 0;
+		while(fgets(line, sizeof(line), file) && row < 32) {
+			int len = strlen(line);
+			if(line[len-1] == '\n') line[len-1] = '\0';
 
-	FILE *file = fopen("level_grid.txt", "r");
-	char line[50];
-	int row = 0;
-	while(fgets(line, sizeof(line), file) && row < 32) {
-		int len = strlen(line);
-		if(line[len-1] == '\n') line[len-1] = '\0';
-
-		for(int i = 0; line[i]; i++)
-			grid[row][i] = line[i];
-		
-		row++;
-	}
-
-	// for(int i = 0; i < 32; i++) {
-	// 	for(int j = 0; j < 32; j++)
-	// 		printf("%c", grid[i][j]);
-	// 	printf("\n");
-	// }
-
-
-	for(int i = 0; i < 32; i++) {
-		for(int j = 0; j < 32; j++) {
-			if(grid[i][j] == '#') continue;
-			if(grid[i-1][j] == '#') continue;
-			if(grid[i-1][j+1] == '#') continue;
-			if(grid[i][j+1] == '#') continue;
-
-			okay[i][j] = 1;
+			for(int i = 0; line[i]; i++)
+				grid[row][i][lvl] = line[i];
+			
+			row++;
 		}
-	}
 
-	for(int i = 0; i < 32; i++) {
-		for(int j = 0; j < 32; j++) {
-			if(okay[i][j] && grid[i][j] == '.') khawa[i][j] = 0;
-			else khawa[i][j] = 1;
+		for(int i = 0; i < 32; i++) {
+			for(int j = 0; j < 32; j++) {
+				if(grid[i][j][lvl] == '#') continue;
+				if(grid[i-1][j][lvl] == '#') continue;
+				if(grid[i-1][j+1][lvl] == '#') continue;
+				if(grid[i][j+1][lvl] == '#') continue;
+
+				okay[i][j][lvl] = 1;
+			}
 		}
-	}
 
-	for(int i = 0; i < 32; i++) {
-		for(int j = 0; j < 32; j++)
-			printf("%d", okay[i][j]);
-		printf("\n");
-	}
-
-
-	FILE *file2 = fopen("level_grid_2.txt", "r");
-	char line2[50];
-	int row2 = 0;
-	while(fgets(line2, sizeof(line2), file2) && row2 < 32) {
-		int len = strlen(line2);
-		if(line2[len-1] == '\n') line2[len-1] = '\0';
-
-		for(int i = 0; line2[i]; i++)
-			grid2[row2][i] = line2[i];
-		
-		row2++;
-	}
-
-	for(int i = 0; i < 32; i++) {
-		for(int j = 0; j < 32; j++) {
-			if(grid2[i][j] == '#') continue;
-			if(grid2[i-1][j] == '#') continue;
-			if(grid2[i-1][j+1] == '#') continue;
-			if(grid2[i][j+1] == '#') continue;
-
-			okay2[i][j] = 1;
+		for(int i = 0; i < 32; i++) {
+			for(int j = 0; j < 32; j++) {
+				if(okay[i][j][lvl] && grid[i][j][lvl] == '.') khawa[i][j][lvl] = 0;
+				else khawa[i][j][lvl] = 1;
+			}
 		}
-	}
 
-	for(int i = 0; i < 32; i++) {
-		for(int j = 0; j < 32; j++) {
-			if(okay2[i][j] && grid2[i][j] == '.') khawa2[i][j] = 0;
-			else khawa2[i][j] = 1;
+		for(int i = 0; i < 32; i++) {
+			for(int j = 0; j < 32; j++)
+				printf("%d", okay[i][j][lvl]);
+			printf("\n");
 		}
-	}
-
-	for(int i = 0; i < 32; i++) {
-		for(int j = 0; j < 32; j++)
-			printf("%d", okay2[i][j]);
-		printf("\n");
 	}
 
 	iSetTimer(15, update);
@@ -1060,7 +869,7 @@ int main() {
 	ghost_motion_t[0] = iSetTimer(120, moveGhost);
 	iSetTimer(300, shortestPath);
 	iSetTimer(1000, timeInc);
-
+	
 	iInitialize(600, 700, "pagman");
 	
 	return 0;
