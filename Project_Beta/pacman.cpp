@@ -11,7 +11,7 @@ const int d = 40;
 #define INGAME_LVL_3 5
 #define NAME_INPUT 6
 #define TRANSITION 7
-int GAMESTATE = 5;
+int GAMESTATE = 1;
 //---------------
 
 // essential functions
