@@ -11,7 +11,7 @@ const int d = 40;
 #define INGAME_LVL_3 5
 #define NAME_INPUT 6
 #define TRANSITION 7
-int GAMESTATE = 1;
+int GAMESTATE = 5;
 //---------------
 
 // essential functions
@@ -91,6 +91,11 @@ int submenuSelectedOption = 0;
 int insideSubmenu = 0;
 int numGhost = 4;
 
+
+typedef struct Portal {
+	int x, y;
+};
+Portal portals[4];
 
 void drawMenu() {
     iClear();
@@ -212,7 +217,7 @@ void level() {
 
 	iShowBMP(17, 17, "assets/level_bg_2.bmp");
 
-	if(score[0] == 302) {
+	if(score[0] == 30) {
 		iClear();
 
 		GAMESTATE = TRANSITION;
@@ -274,7 +279,7 @@ void level2() {
 
 	iSetColor(20, 210, 60);
 
-	if(score[1] == 292) {
+	if(score[1] == 29) {
 		iClear();
 
 		GAMESTATE = TRANSITION;
@@ -382,6 +387,9 @@ void level3() {
 		for(int j = 0; j < 32; j++) {
 			if(!khawa[i][j][2])
 				iPoint(toAxis_x(i, j) + 16, toAxis_y(i, j) + 16, 2);
+
+			if(grid[i][j][2] == 'O')
+				iFilledRectangle(toAxis_x(i, j), toAxis_y(i, j), 20, 28);
 		}
 	}
 
@@ -402,6 +410,11 @@ void level3() {
 	if(numGhost > 1) iShowBMP(ghost_x[1], ghost_y[1], "assets/bhoot_1.bmp");
 	if(numGhost > 2) iShowBMP(ghost_x[2], ghost_y[2], "assets/bhoot_2.bmp");
 	if(numGhost > 3) iShowBMP(ghost_x[3], ghost_y[3], "assets/bhoot_3.bmp");
+
+	for(int i = 0; i < 4; i++) {
+		if(i & 1) iShowBMP(toAxis_x(portals[i].x, portals[i].y), toAxis_y(portals[i].x, portals[i].y), "assets/portal_left.bmp");
+		else iShowBMP(toAxis_x(portals[i].x, portals[i].y), toAxis_y(portals[i].x, portals[i].y), "assets/portal_right.bmp");
+	}
 }
 
 
@@ -874,6 +887,42 @@ void update() {
 
 		pacman_dir = 0; 
 	}
+
+	if(GAMESTATE == INGAME_LVL_3) {
+		int here_x = toArray_x(pacman_x, pacman_y);
+		int here_y = toArray_y(pacman_x, pacman_y);
+
+		for(int i = 0; i < 4; i++) {
+			// if(here_x == portals[i].x && here_y == portals[i].y) {
+
+			int ax1 = pacman_x;
+			int ax2 = ax1 + 10;
+			int ay1 = pacman_y;
+			int ay2 = ay1 + 18;
+
+			int bx1 = toAxis_x(portals[i].x, portals[i].y);
+			int bx2 = bx1 + 12;
+			int by1 = toAxis_y(portals[i].x, portals[i].y);
+			int by2 = by1 + 15;
+
+			int ret = 1;
+			ret &= (ax1 <= bx2);
+			ret &= (ax2 >= bx1);
+			ret &= (ay1 <= by2);
+			ret &= (ay2 >= by1);
+
+			if(ret == 0) continue;
+
+			if (i == 3) here_x = portals[0].x, here_y = portals[0].y + 1;
+			if (i == 0) here_x = portals[3].x, here_y = portals[3].y - 1;
+			if (i == 1) here_x = portals[2].x, here_y = portals[2].y + 1;
+			if (i == 2) here_x = portals[1].x, here_y = portals[1].y - 1;
+			// }
+		}
+
+		pacman_x = toAxis_x(here_x, here_y);
+		pacman_y = toAxis_y(here_x, here_y);
+	}
 }
 
 void timeInc() {
@@ -884,6 +933,11 @@ void timeInc() {
 
 int main() {
 	//place your own initialization codes here.
+
+	portals[0] = {8, 6};
+	portals[1] = {8, 25};
+	portals[2] = {23, 6};
+	portals[3] = {23, 25};
 
 	len = 0;
 	mode = 0;
@@ -943,7 +997,7 @@ int main() {
 	iSetTimer(15, update);
 	pacman_mouth_t = iSetTimer(200, showPacman);
 	pacman_motion_t = iSetTimer(100, movePacman);
-	ghost_motion_t[0] = iSetTimer(120, moveGhost);
+	ghost_motion_t[0] = iSetTimer(130, moveGhost);
 	iSetTimer(300, shortestPath);
 	iSetTimer(1000, timeInc);
 
