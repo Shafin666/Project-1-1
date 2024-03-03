@@ -44,10 +44,10 @@ void moveGhost(void);
 
 //-----------------------------------
 
-int score[2];
-int khawa[40][40][2];
+int score[3];
+int khawa[40][40][3];
 int ghost_x[4], ghost_y[4];
-int dist[40][40][2];
+int dist[40][40][3];
 int last[4] = {-1, -1, -1, -1};
 
 int giveUp;
@@ -61,8 +61,8 @@ int WIN = 0, LOSE = 0;
 
 int pacman_dir = 0; // 0 = left, 1 = up, 2 = right, 3 = down;
 
-char grid[40][40][2];
-int okay[40][40][2];
+char grid[40][40][3];
+int okay[40][40][3];
 
 // timers
 int pacman_mouth_t, pacman_motion_t;
@@ -74,6 +74,8 @@ int ghost_motion_t[4];
 int forward_right = 0, forward_up = 0;
 int pacman_last_x, pacman_last_y;
 // -------------------------------
+
+int timeShuru[3], timeNow[3];
 
 // MENU
 #define MENU_START 1
@@ -89,8 +91,6 @@ int submenuSelectedOption = 0;
 int insideSubmenu = 0;
 int numGhost = 4;
 
-int timeShuru = 0, timeNow = 0;
-int timeShuru2 = 0, timeNow2 = 0;
 
 void drawMenu() {
     iClear();
@@ -188,13 +188,6 @@ void showLeaderBoard() {
 
     fclose(file);
 
-    // Print the entries
-    // printf("Name\tScore\n");
-    for (int i = 0; i < numEntries; i++) {
-        // printf("%s\t%d\n", entries[i].name, entries[i].score);
-		// iText(500, 500, entries[i].name, GLUT_BITMAP_TIMES_ROMAN_24);
-    }
-
 	iText(200, 500, "NAME", GLUT_BITMAP_TIMES_ROMAN_24);
 	iText(350, 500, "SCORE", GLUT_BITMAP_TIMES_ROMAN_24);
 
@@ -229,8 +222,8 @@ void level() {
 	if(LOSE) {
 		iClear();
 
-		score[1] = 0;
-		timeShuru2 = 0;
+		score[1] = score[2] = 0;
+		timeShuru[1] = timeShuru[2] = 0;
 		GAMESTATE = NAME_INPUT;
 
 		return;
@@ -246,7 +239,7 @@ void level() {
 
 	iShowBMP(150, 600, "assets/title.bmp");
 	iText(500, 600, toString(score[0]), GLUT_BITMAP_TIMES_ROMAN_24);
-	iText(100, 600, toString(timeNow), GLUT_BITMAP_TIMES_ROMAN_24);
+	iText(100, 600, toString(timeNow[0]), GLUT_BITMAP_TIMES_ROMAN_24);
 
 	iSetColor(255, 255, 255);
 	for(int i = 0; i < 32; i++) {
@@ -283,10 +276,8 @@ void level2() {
 
 	if(score[1] == 29) {
 		iClear();
-		// iShowBMP(0, 0, "win.bmp");
 
-		WIN = 1;
-		GAMESTATE = NAME_INPUT;
+		GAMESTATE = TRANSITION;
 
 		return;
 	}
@@ -316,12 +307,80 @@ void level2() {
 
 	iShowBMP(150, 600, "assets/title.bmp");
 	iText(500, 600, toString(score[1]), GLUT_BITMAP_TIMES_ROMAN_24);
-	iText(100, 600, toString(timeNow2), GLUT_BITMAP_TIMES_ROMAN_24);
+	iText(100, 600, toString(timeNow[1]), GLUT_BITMAP_TIMES_ROMAN_24);
 
 	iSetColor(255, 255, 255);
 	for(int i = 0; i < 32; i++) {
 		for(int j = 0; j < 32; j++) {
 			if(!khawa[i][j][1])
+				iPoint(toAxis_x(i, j) + 16, toAxis_y(i, j) + 16, 2);
+		}
+	}
+
+	if (pacman_mouth_toggle) {
+		if (pacman_dir == 0) iShowBMP(pacman_x+2, pacman_y+1, "assets/pacman_open_right.bmp");
+		if (pacman_dir == 1) iShowBMP(pacman_x+2, pacman_y+1, "assets/pacman_open_up.bmp");
+		if (pacman_dir == 2) iShowBMP(pacman_x+2, pacman_y+1, "assets/pacman_open_left.bmp");
+		if (pacman_dir == 3) iShowBMP(pacman_x+2, pacman_y+1, "assets/pacman_open_down.bmp");
+	}
+	else {
+		if (pacman_dir == 0) iShowBMP(pacman_x+2, pacman_y+1, "assets/pacman_close_right.bmp");
+		if (pacman_dir == 1) iShowBMP(pacman_x+2, pacman_y+1, "assets/pacman_close_up.bmp");
+		if (pacman_dir == 2) iShowBMP(pacman_x+2, pacman_y+1, "assets/pacman_close_left.bmp");
+		if (pacman_dir == 3) iShowBMP(pacman_x+2, pacman_y+1, "assets/pacman_close_down.bmp");
+	}
+
+	if(numGhost > 0) iShowBMP(ghost_x[0], ghost_y[0], "assets/bhoot_0.bmp");
+	if(numGhost > 1) iShowBMP(ghost_x[1], ghost_y[1], "assets/bhoot_1.bmp");
+	if(numGhost > 2) iShowBMP(ghost_x[2], ghost_y[2], "assets/bhoot_2.bmp");
+	if(numGhost > 3) iShowBMP(ghost_x[3], ghost_y[3], "assets/bhoot_3.bmp");
+}
+
+void level3() {
+	iClear();
+
+	iSetColor(150, 90, 10);
+
+	if(score[2] == 295) {
+		iClear();
+
+		WIN = 1;
+		GAMESTATE = NAME_INPUT;
+
+		return;
+	}
+
+	if(LOSE) {
+		iClear();
+
+		GAMESTATE = NAME_INPUT;
+
+		return;
+	}
+	
+	for(int i = 0; i < numGhost; i++) {
+
+		if(hit(i, 0, 1)) {
+			LOSE = 1;
+			return;
+		}
+	}
+
+	for(int i = d; i < 512 + d; i++) {
+		for(int j = d; j < 512 + d; j++) {
+			if(grid[toArray_x(i, j)][toArray_y(i, j)][2] == '#')
+				iPoint(i, j+15, 1);
+		}
+	}
+
+	iShowBMP(150, 600, "assets/title.bmp");
+	iText(500, 600, toString(score[2]), GLUT_BITMAP_TIMES_ROMAN_24);
+	iText(100, 600, toString(timeNow[2]), GLUT_BITMAP_TIMES_ROMAN_24);
+
+	iSetColor(255, 255, 255);
+	for(int i = 0; i < 32; i++) {
+		for(int j = 0; j < 32; j++) {
+			if(!khawa[i][j][2])
 				iPoint(toAxis_x(i, j) + 16, toAxis_y(i, j) + 16, 2);
 		}
 	}
@@ -388,8 +447,8 @@ void iDraw() {
 	if(GAMESTATE == INGAME_LVL_1) {
 		numGhost = max(1, submenuSelectedOption - 3);
 		if(!timeShuru) {
-			timeShuru = 1;
-			timeNow = 0;
+			timeShuru[0] = 1;
+			timeNow[0] = 0;
 		}
 		giveUp = 0;
 
@@ -399,13 +458,25 @@ void iDraw() {
 
 	if(GAMESTATE == INGAME_LVL_2) {
 		numGhost = max(2, submenuSelectedOption - 2);
-		if(!timeShuru2) {
-			timeShuru2 = 1;
-			timeNow2 = 0;
+		if(!timeShuru[1]) {
+			timeShuru[1] = 1;
+			timeNow[1] = 0;
 		}
 		giveUp = 0;
 
 		level2();
+		return;
+	}
+
+	if(GAMESTATE == INGAME_LVL_3) {
+		numGhost = max(2, submenuSelectedOption - 2);
+		if(!timeShuru[2]) {
+			timeShuru[2] = 1;
+			timeNow[2] = 0;
+		}
+		giveUp = 0;
+
+		level3();
 		return;
 	}
 
@@ -530,33 +601,31 @@ void iKeyboard(unsigned char key) {
 				// printf("%s\n", str2);
 
 				int totalScore = 0;
-				if(WIN) totalScore = 20000 - timeNow - timeNow2;
-				else totalScore = 500 + 10 * timeNow + 20 * score[0] + timeNow2 * 10 + score[1] * 20;
+				if(WIN) totalScore = 18000 - timeNow[0] - timeNow[1] - timeNow[2];
+				else totalScore = 500 + 5 * timeNow[0] + 10 * score[0] + timeNow[1] * 8 + score[1] * 12 + timeNow[2] * 10 + score[2] * 15;
 
 				totalScore += giveUp * 500;
 
-				printf("%d %d %d %d\n", score[0], timeNow, score[1], timeNow2);
+				printf("%d %d %d %d %d %d\n", score[0], timeNow[0], score[1], timeNow[1], score[2], timeNow[2]);
 
 				FILE* file = fopen("data.txt", "a");
 				fprintf(file, "%s %d\n", str2, totalScore);
 				fclose(file);
 
-				for(i = 0; i < len; i++)
-					str[i] = 0;
+				for(i = 0; i < len; i++) str[i] = 0;
 				len = 0;
 
 				GAMESTATE = LEADERBOARD;
 			}
-			else
-			{
-				str[len] = key;
-				len++;
-			}
+			else str[len++] = key;
 		}
 	}
 	
 	if(GAMESTATE == TRANSITION) {
-		if(key == 'y') GAMESTATE = INGAME_LVL_2;
+		if(key == 'y') {
+			if(timeNow[1]) GAMESTATE = INGAME_LVL_3;
+			else if(timeNow[0]) GAMESTATE = INGAME_LVL_2;
+		}
 		else {
 			LOSE = 1;
 			giveUp = 1;
@@ -628,6 +697,7 @@ void movePacman(void) {
 	int lvl = 0;
 	if(GAMESTATE == INGAME_LVL_1) lvl = 0;
 	if(GAMESTATE == INGAME_LVL_2) lvl = 1;
+	if(GAMESTATE == INGAME_LVL_3) lvl = 2;
 
 	pacman_last_x = pacman_x;
 	pacman_last_y = pacman_y;
@@ -689,6 +759,7 @@ void moveGhost(void) {
 	int lvl;
 	if(GAMESTATE == INGAME_LVL_1) lvl = 0;
 	if(GAMESTATE == INGAME_LVL_2) lvl = 1;
+	if(GAMESTATE == INGAME_LVL_3) lvl = 2;
 
 	for(int j = 0; j < 4; j++) {
 		int dx[4] = {0, 1, 0, -1};
@@ -745,12 +816,13 @@ void shortestPath(void) {
 	int lvl;
 	if(GAMESTATE == INGAME_LVL_1) lvl = 0;
 	if(GAMESTATE == INGAME_LVL_2) lvl = 1;
+	if(GAMESTATE == INGAME_LVL_3) lvl = 2;
 
-	for(int i = 0; i < 32; i++)
-		for(int j = 0; j < 32; j++)
+	for(int i = 0; i <= 32; i++)
+		for(int j = 0; j <= 32; j++)
 			dist[i][j][lvl] =  5000;
 
-	dist[toArray_x(pacman_x, pacman_y)][toArray_y(pacman_x, pacman_y)][0] = 0;
+	dist[toArray_x(pacman_x, pacman_y)][toArray_y(pacman_x, pacman_y)][lvl] = 0;
 
 	for(int k = 0; k < 512; k++) {
 		for(int i = 0; i < 32; i++) {
@@ -777,9 +849,9 @@ void update() {
 
 		pacman_dir = 0; 
 
-		score[0] = score[1] = 0;
+		score[0] = score[1] = score[2] = 0;
 
-		for(int lvl = 0; lvl < 2; lvl++) {
+		for(int lvl = 0; lvl < 3; lvl++) {
 			for(int i = 0; i < 32; i++) {
 				for(int j = 0; j < 32; j++) {
 					if(okay[i][j][lvl] && grid[i][j][lvl] == '.') khawa[i][j][lvl] = 0;
@@ -788,9 +860,9 @@ void update() {
 			}
 		}
 
-		timeShuru = timeShuru2 = 0;
-		timeNow = timeNow2 = 0;
-		score[0] = score[1] = 0;
+		timeShuru[0] = timeShuru[1] = timeShuru[2] = 0;
+		timeNow[0] = timeNow[1] = timeNow[2] = 0;
+		score[0] = score[1] = score[2] = 0;
 	}
 	if(GAMESTATE == TRANSITION) {
 		resetGhost();
@@ -805,8 +877,9 @@ void update() {
 }
 
 void timeInc() {
-	timeNow++;
-	if(GAMESTATE == INGAME_LVL_2) timeNow2++;
+	if(GAMESTATE == INGAME_LVL_1) timeNow[0]++;
+	if(GAMESTATE == INGAME_LVL_2) timeNow[1]++;
+	if(GAMESTATE == INGAME_LVL_3) timeNow[2]++;
 }
 
 int main() {
@@ -820,11 +893,12 @@ int main() {
 
 	resetGhost();
 
-	for(int lvl = 0; lvl < 2; lvl++) {
+	for(int lvl = 0; lvl < 3; lvl++) {
 		FILE *file; 
 
 		if(lvl == 0) file = fopen("level_grid.txt", "r");
 		if(lvl == 1) file = fopen("level_grid_2.txt", "r");
+		if(lvl == 2) file = fopen("level_grid_3.txt", "r");
 
 		char line[50];
 		int row = 0;
@@ -861,6 +935,9 @@ int main() {
 				printf("%d", okay[i][j][lvl]);
 			printf("\n");
 		}
+
+
+		fclose(file);
 	}
 
 	iSetTimer(15, update);
@@ -869,7 +946,7 @@ int main() {
 	ghost_motion_t[0] = iSetTimer(120, moveGhost);
 	iSetTimer(300, shortestPath);
 	iSetTimer(1000, timeInc);
-	
+
 	iInitialize(600, 700, "pagman");
 	
 	return 0;
