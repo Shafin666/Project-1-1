@@ -212,7 +212,7 @@ void level() {
 
 	iShowBMP(17, 17, "assets/level_bg_2.bmp");
 
-	if(score[0] == 30) {
+	if(score[0] == 302) {
 		iClear();
 
 		GAMESTATE = TRANSITION;
@@ -274,7 +274,7 @@ void level2() {
 
 	iSetColor(20, 210, 60);
 
-	if(score[1] == 29) {
+	if(score[1] == 292) {
 		iClear();
 
 		GAMESTATE = TRANSITION;
