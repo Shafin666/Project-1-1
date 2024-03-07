@@ -81,6 +81,7 @@ int pacman_last_x, pacman_last_y;
 
 //music
 int menuMusic = 0;
+int deathMusic = 0, winMusic = 0;
 //--------------------------------
 
 
@@ -525,8 +526,19 @@ void iDraw() {
 	if(GAMESTATE == NAME_INPUT) {
 		iClear();
 
-		if(WIN) iShowBMP(0, 0, "assets\\win.bmp");
+		if(WIN) {
+			if(!winMusic) {
+				PlaySound(TEXT("music\\youwin.wav"), NULL, SND_ASYNC);
+				winMusic = 1;
+			}
+			iShowBMP(0, 0, "assets\\win.bmp");
+		}
 		else {
+			if(!deathMusic) {
+				PlaySound(TEXT("music\\youdied.wav"), NULL, SND_ASYNC);
+				deathMusic = 1;
+			}
+
 			if(!timeShuru[1]) iShowBMP(0, 0, "assets\\death_1.bmp");
 			else if(!timeShuru[2]) iShowBMP(0, 0, "assets\\death_2.bmp");
 			else iShowBMP(0, 0, "assets\\death_3.bmp");
@@ -917,6 +929,7 @@ void update() {
 		}
 
 		musicLvl[0] = musicLvl[1] = musicLvl[2] = 0;
+		deathMusic = 0, winMusic = 0;
 	}
 	if (GAMESTATE == TRANSITION) {
 		resetGhost();
