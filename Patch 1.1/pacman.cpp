@@ -60,9 +60,10 @@ int mouse_x, mouse_y;
 int pacman_x = 16 + d, pacman_y = 512 - 30 * 16 + d;
 bool pacman_mouth_toggle = 0;
 
-int WIN = 0, LOSE = 0;
-
 int pacman_dir = 0; // 0 = left, 1 = up, 2 = right, 3 = down;
+int buffer = 5;
+
+int WIN = 0, LOSE = 0;
 
 char grid[40][40][3];
 int okay[40][40][3];
@@ -75,15 +76,18 @@ int ghost_motion_t[4];
 
 //motion
 int forward_right = 0, forward_up = 0;
-int pacman_last_x, pacman_last_y;
 // -------------------------------
 
 
 //music
 int menuMusic = 0;
 int deathMusic = 0, winMusic = 0;
+int hitMusic = 0;
+int musicLvl[3];
 //--------------------------------
 
+int hpLvl[3] = {2, 2, 2};
+int showCherry[3];
 
 int timeShuru[3], timeNow[3];
 
@@ -209,6 +213,7 @@ void showLeaderBoard() {
 }
 
 char cs[15], s[15];
+
 void level() {
 	iClear();
 
@@ -232,12 +237,38 @@ void level() {
 	for(int i = 0; i < numGhost; i++) {
 
 		if(hit(i, 0, 1)) {
-			LOSE = 1;
-			return;
+
+			if(!hitMusic) {
+				PlaySound(TEXT("music\\hit.wav"), NULL, SND_ASYNC);
+				hitMusic = 1;
+				musicLvl[0] = 0;
+			}
+
+			hpLvl[0]--;
+
+			if(hpLvl[0] == 0) {
+				LOSE = 1;
+				return;
+			}
+			else {
+				pacman_x = toAxis_x(30, 1);
+				pacman_y = toAxis_y(30, 1);
+				pacman_dir = 0;
+				forward_right = forward_up = 0;
+			}
 		}
 	}
 
+
 	iShowBMP(0, 0, "assets/level_bg_1.bmp");
+
+	if(showCherry[0] == 1) {
+		iShowBMP(toAxis_x(16, 16), toAxis_y(16, 16), "assets/cherry.bmp");
+	}
+
+	if(hpLvl[0] > 0) iShowBMP(350, 18, "assets/heart.bmp");
+	if(hpLvl[0] > 1) iShowBMP(400, 18, "assets/heart.bmp");
+	if(hpLvl[0] > 2) iShowBMP(450, 18, "assets/heart.bmp");
 
 	iText(492, 600, toString(score[0]), GLUT_BITMAP_TIMES_ROMAN_24);
 
@@ -300,12 +331,40 @@ void level2() {
 	for(int i = 0; i < numGhost; i++) {
 
 		if(hit(i, 0, 1)) {
-			LOSE = 1;
-			return;
+
+			if(!hitMusic) {
+				PlaySound(TEXT("music\\hit.wav"), NULL, SND_ASYNC);
+				hitMusic = 1;
+				musicLvl[1] = 0;
+			}
+
+			hpLvl[1]--;
+
+			if(hpLvl[1] == 0) {
+				LOSE = 1;
+				return;
+			}
+			else {
+				pacman_x = toAxis_x(30, 1);
+				pacman_y = toAxis_y(30, 1);
+				pacman_dir = 0;
+				forward_right = forward_up = 0;
+			}
+
+			// LOSE = 1;
+			// return;
 		}
 	}
 
 	iShowBMP(0, 0, "assets/level_bg_2.bmp");
+
+	if(showCherry[1] == 1) {
+		iShowBMP(toAxis_x(16, 16), toAxis_y(16, 16), "assets/cherry.bmp");
+	}
+
+	if(hpLvl[1] > 0) iShowBMP(350, 18, "assets/heart.bmp");
+	if(hpLvl[1] > 1) iShowBMP(400, 18, "assets/heart.bmp");
+	if(hpLvl[1] > 2) iShowBMP(450, 18, "assets/heart.bmp");
 
 	iText(500, 600, toString(score[1]), GLUT_BITMAP_TIMES_ROMAN_24);
 
@@ -368,12 +427,39 @@ void level3() {
 	for(int i = 0; i < numGhost; i++) {
 
 		if(hit(i, 0, 1)) {
-			LOSE = 1;
-			return;
+			if(!hitMusic) {
+				PlaySound(TEXT("music\\hit.wav"), NULL, SND_ASYNC);
+				hitMusic = 1;
+				musicLvl[2] = 0;
+			}
+
+			hpLvl[2]--;
+
+			if(hpLvl[2] == 0) {
+				LOSE = 1;
+				return;
+			}
+			else {
+				pacman_x = toAxis_x(30, 1);
+				pacman_y = toAxis_y(30, 1);
+				pacman_dir = 0;
+				forward_right = forward_up = 0;
+			}
+
+			// LOSE = 1;
+			// return;
 		}
 	}
 
 	iShowBMP(0, 0, "assets/level_bg_3.bmp");
+
+	if(showCherry[2] == 1) {
+		iShowBMP(toAxis_x(16, 16), toAxis_y(16, 16), "assets/cherry.bmp");
+	}
+
+	if(hpLvl[2] > 0) iShowBMP(350, 18, "assets/heart.bmp");
+	if(hpLvl[2] > 1) iShowBMP(400, 18, "assets/heart.bmp");
+	if(hpLvl[2] > 2) iShowBMP(450, 18, "assets/heart.bmp");
 
 	iText(500, 600, toString(score[2]), GLUT_BITMAP_TIMES_ROMAN_24);
 
@@ -446,8 +532,6 @@ void drawTextBox()
 	iText(190, 340, "Enter your Nickname: ", GLUT_BITMAP_9_BY_15);
 }
 
-int musicLvl[3];
-
 void iDraw() {
 	iClear();
 
@@ -473,7 +557,10 @@ void iDraw() {
 		giveUp = 0;
 
 		if(!musicLvl[0]) {
+			if(hitMusic) Sleep(1000);
+
 			menuMusic = 0;
+			hitMusic = 0;
 
 			PlaySound(TEXT("music\\level_1_bgm.wav"), NULL, SND_LOOP | SND_ASYNC);
 			musicLvl[0] = 1;
@@ -495,6 +582,11 @@ void iDraw() {
 		giveUp = 0;
 
 		if(!musicLvl[1]) {
+			if(hitMusic) Sleep(1000);
+
+			menuMusic = 0;
+			hitMusic = 0;
+
 			PlaySound(TEXT("music\\level_2_bgm.wav"), NULL, SND_LOOP | SND_ASYNC);
 			musicLvl[1] = 1;
 		}
@@ -515,6 +607,11 @@ void iDraw() {
 		giveUp = 0;
 
 		if(!musicLvl[2]) {
+			if(hitMusic) Sleep(1000);
+
+			menuMusic = 0;
+			hitMusic = 0;
+
 			PlaySound(TEXT("music\\level_3_bgm.wav"), NULL, SND_LOOP | SND_ASYNC);
 			musicLvl[2] = 1;
 		}
@@ -721,23 +818,31 @@ void iSpecialKeyboard(unsigned char key) {
     case (INGAME_LVL_2):
     case (INGAME_LVL_3):
         if (key == GLUT_KEY_RIGHT) {
-            forward_up = 0;
-            forward_right = 1;
+            // forward_up = 0;
+            // forward_right = 1;
+
+			buffer = 0;
         }
         
         if (key == GLUT_KEY_LEFT) {
-            forward_up = 0;
-            forward_right = -1;
+            // forward_up = 0;
+            // forward_right = -1;
+
+			buffer = 2;
         }
 
         if(key == GLUT_KEY_UP) {
-            forward_right = 0;
-            forward_up = 1;
+            // forward_right = 0;
+            // forward_up = 1;
+
+			buffer = 1;
         }
 
         if(key == GLUT_KEY_DOWN) {
-            forward_right = 0;
-            forward_up = -1;
+            // forward_right = 0;
+            // forward_up = -1;
+
+			buffer = 3;
         }
         break;
     }
@@ -748,6 +853,8 @@ void showPacman(void) {
 	pacman_mouth_toggle ^= 1;
 }
 
+int last_right, last_up;
+
 void movePacman(void) {
 
 	int lvl = 0;
@@ -755,8 +862,10 @@ void movePacman(void) {
 	if(GAMESTATE == INGAME_LVL_2) lvl = 1;
 	if(GAMESTATE == INGAME_LVL_3) lvl = 2;
 
-	pacman_last_x = pacman_x;
-	pacman_last_y = pacman_y;
+	if(buffer == 0) forward_right = 1, forward_up = 0;
+	else if(buffer == 1) forward_right = 0, forward_up = 1;
+	else if(buffer == 2) forward_right = -1, forward_up = 0;
+	else if(buffer == 3) forward_right = 0, forward_up = -1;
 
 	pacman_x += 16 * forward_right;
 	pacman_y += 16 * forward_up;
@@ -767,12 +876,28 @@ void movePacman(void) {
 	if(!okay[here_x][here_y][lvl]) {
 		pacman_x -= 16 * forward_right;
 		pacman_y -= 16 * forward_up;
+
+		pacman_x += 16 * last_right;
+		pacman_y += 16 * last_up;
+
+		here_x = toArray_x(pacman_x, pacman_y);
+		here_y = toArray_y(pacman_x, pacman_y);
+
+		if(!okay[here_x][here_y][lvl]) {
+			pacman_x -= 16 * last_right;
+			pacman_y -= 16 * last_up;
+		}
+	}
+	else {
+		last_right = forward_right;
+		last_up = forward_up;
+		buffer = 5;
 	}
 
-	if(forward_right > 0) pacman_dir = 0;
-	if(forward_right < 0) pacman_dir = 2;
-	if(forward_up > 0) pacman_dir = 1;
-	if(forward_up < 0) pacman_dir = 3;
+	if(last_right > 0) pacman_dir = 0;
+	if(last_right < 0) pacman_dir = 2;
+	if(last_up > 0) pacman_dir = 1;
+	if(last_up < 0) pacman_dir = 3;
 
 	if(pacman_x < d + 1) pacman_x = 512 + d - 32;
 	if(pacman_x > 512 + d - 32) pacman_x = d;
@@ -782,6 +907,13 @@ void movePacman(void) {
 
 	score[lvl] += !khawa[here_x][here_y][lvl];
 	khawa[here_x][here_y][lvl] = 1;
+
+	if(score[lvl] == 100 && showCherry[lvl] == 0) showCherry[lvl] = 1;
+
+	if(here_x == 16 && here_y == 16 && showCherry[lvl]) {
+		showCherry[lvl] = 2; //eaten
+		hpLvl[lvl]++;
+	}
 }
 
 bool hit(int i, int j, int player) {
@@ -907,6 +1039,7 @@ void update() {
 		WIN = 0, LOSE = 0;
 
 		pacman_dir = 0; 
+		forward_right = forward_up = 0;
 
 		score[0] = score[1] = score[2] = 0;
 
@@ -929,7 +1062,10 @@ void update() {
 		}
 
 		musicLvl[0] = musicLvl[1] = musicLvl[2] = 0;
-		deathMusic = 0, winMusic = 0;
+		deathMusic = 0, winMusic = 0, hitMusic = 0;
+
+		hpLvl[0] = hpLvl[1] = hpLvl[2] = 2;
+		showCherry[0] = showCherry[1] = showCherry[2] = 0;
 	}
 	if (GAMESTATE == TRANSITION) {
 		resetGhost();
@@ -940,6 +1076,7 @@ void update() {
 		WIN = 0, LOSE = 0;
 
 		pacman_dir = 0; 
+		forward_right = forward_up = 0;
 	}
 
 	if (GAMESTATE == INGAME_LVL_3) {
@@ -1055,7 +1192,7 @@ int main() {
 	iSetTimer(350, shortestPath);
 	iSetTimer(10, timeInc);
 
-	PlaySound(TEXT("music\\shops.wav"), NULL, SND_ASYNC | SND_LOOP);
+	// PlaySound(TEXT("music\\shops.wav"), NULL, SND_ASYNC | SND_LOOP);
 
 	iInitialize(600, 700, "pacman");
 	
