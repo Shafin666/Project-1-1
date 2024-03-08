@@ -29,13 +29,8 @@ int toArray_x(int x, int y) { return (512 - (y - d)) / 16; }
 int toArray_y(int x, int y) { return (x - d) / 16; }
 
 char *toString(int n) {
-	int len = 0, m = n;
-	while(m) { len++; m /= 10; }
-	char *str = (char *) malloc(len + 1);
-	for(int i = 0; i < len; i++, n /= 10)
-		str[len - i - 1] = n % 10 + '0';
-	
-	str[len] = '\0';
+	char *str = (char*) malloc(8 * sizeof(char));
+	sprintf(str, "%d", n);
 	return str;
 }
 
@@ -60,7 +55,7 @@ int mouse_x, mouse_y;
 int pacman_x = 16 + d, pacman_y = 512 - 30 * 16 + d;
 bool pacman_mouth_toggle = 0;
 
-int pacman_dir = 0; // 0 = left, 1 = up, 2 = right, 3 = down;
+int pacman_dir = 0; // 0 = right, 1 = up, 2 = left, 3 = down;
 int buffer = 5;
 
 int WIN = 0, LOSE = 0;
@@ -81,7 +76,7 @@ int forward_right = 0, forward_up = 0;
 
 //music
 int menuMusic = 0;
-int deathMusic = 0, winMusic = 0;
+int deathMusic = 0, winMusic = 0, giveUpMusic = 0;
 int hitMusic = 0;
 int musicLvl[3];
 //--------------------------------
@@ -350,9 +345,6 @@ void level2() {
 				pacman_dir = 0;
 				forward_right = forward_up = 0;
 			}
-
-			// LOSE = 1;
-			// return;
 		}
 	}
 
@@ -445,9 +437,6 @@ void level3() {
 				pacman_dir = 0;
 				forward_right = forward_up = 0;
 			}
-
-			// LOSE = 1;
-			// return;
 		}
 	}
 
@@ -523,14 +512,6 @@ void resetGhost() {
 char str[100], str2[100];
 int len;
 int mode;
-
-void drawTextBox()
-{
-	iSetColor(150, 150, 150);
-	iRectangle(190, 290, 250, 30);
-
-	iText(190, 340, "Enter your Nickname: ", GLUT_BITMAP_9_BY_15);
-}
 
 void iDraw() {
 	iClear();
@@ -631,6 +612,12 @@ void iDraw() {
 			iShowBMP(0, 0, "assets\\win.bmp");
 		}
 		else {
+			if(giveUp && !giveUpMusic) {
+				PlaySound(TEXT("music\\giveup.wav"), NULL, SND_ASYNC);
+				Sleep(2000);
+				giveUpMusic = 1;
+			}
+
 			if(!deathMusic) {
 				PlaySound(TEXT("music\\youdied.wav"), NULL, SND_ASYNC);
 				deathMusic = 1;
@@ -818,30 +805,18 @@ void iSpecialKeyboard(unsigned char key) {
     case (INGAME_LVL_2):
     case (INGAME_LVL_3):
         if (key == GLUT_KEY_RIGHT) {
-            // forward_up = 0;
-            // forward_right = 1;
-
 			buffer = 0;
         }
         
         if (key == GLUT_KEY_LEFT) {
-            // forward_up = 0;
-            // forward_right = -1;
-
 			buffer = 2;
         }
 
         if(key == GLUT_KEY_UP) {
-            // forward_right = 0;
-            // forward_up = 1;
-
 			buffer = 1;
         }
 
         if(key == GLUT_KEY_DOWN) {
-            // forward_right = 0;
-            // forward_up = -1;
-
 			buffer = 3;
         }
         break;
@@ -1062,7 +1037,7 @@ void update() {
 		}
 
 		musicLvl[0] = musicLvl[1] = musicLvl[2] = 0;
-		deathMusic = 0, winMusic = 0, hitMusic = 0;
+		deathMusic = 0, winMusic = 0, hitMusic = 0, giveUpMusic = 0;
 
 		hpLvl[0] = hpLvl[1] = hpLvl[2] = 2;
 		showCherry[0] = showCherry[1] = showCherry[2] = 0;
@@ -1084,7 +1059,6 @@ void update() {
 		int here_y = toArray_y(pacman_x, pacman_y);
 
 		for(int i = 0; i < 4; i++) {
-			// if(here_x == portals[i].x && here_y == portals[i].y) {
 
 			int ax1 = pacman_x;
 			int ax2 = ax1 + 10;
@@ -1108,7 +1082,6 @@ void update() {
 			if (i == 0) here_x = portals[3].x, here_y = portals[3].y - 1;
 			if (i == 1) here_x = portals[2].x, here_y = portals[2].y + 1;
 			if (i == 2) here_x = portals[1].x, here_y = portals[1].y - 1;
-			// }
 		}
 
 		pacman_x = toAxis_x(here_x, here_y);
@@ -1181,7 +1154,6 @@ int main() {
 			printf("\n");
 		}
 
-
 		fclose(file);
 	}
 
@@ -1191,8 +1163,6 @@ int main() {
 	ghost_motion_t[0] = iSetTimer(150, moveGhost);
 	iSetTimer(350, shortestPath);
 	iSetTimer(10, timeInc);
-
-	// PlaySound(TEXT("music\\shops.wav"), NULL, SND_ASYNC | SND_LOOP);
 
 	iInitialize(600, 700, "pacman");
 	
